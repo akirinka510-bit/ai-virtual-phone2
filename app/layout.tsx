@@ -47,6 +47,11 @@ export default function RootLayout({
             __html: `(function(){try{var d=document.documentElement;var mode=null;try{mode=localStorage.getItem("ai_phone_shell_mode_v1");}catch(e3){}if(mode!=="phone"&&mode!=="desktop")mode="auto";var ch=${JSON.stringify(shellChannel())};var t=(navigator.maxTouchPoints||0)>0;var s=Math.min(screen.width,screen.height);var m=window.matchMedia("(hover: none) and (pointer: coarse)").matches;if(!m){if(mode==="phone"){d.setAttribute("data-force-mobile","1");m=true;}else if(mode==="auto"&&ch==="beta"&&t&&s>0&&s<=620){d.setAttribute("data-force-mobile","1");m=true;}}if(m&&s>=520&&(ch==="beta"||mode==="phone")){var z=Math.min(window.innerWidth/390,window.innerHeight/844);if(isFinite(z)&&z>1.001){d.style.setProperty("--shell-zoom",z.toFixed(4));try{var p=document.createElement("div");p.style.cssText="position:absolute;left:-9999px;top:0;width:100px;--zp:2;zoom:var(--zp)";d.appendChild(p);var w=p.getBoundingClientRect().width;d.removeChild(p);if(!(w>150)){d.setAttribute("data-zoom-fallback","1");}}catch(e2){}}}}catch(e){}})();`,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.onNativeBackPressed=function(){var b=document.querySelector('button[aria-label="返回"],button[aria-label="Back"],button[aria-label="关闭"],.back-button,button[class*="back" i],div[class*="back" i],a[href="javascript:history.back()"],header svg,nav svg');if(b){var t=b;while(t&&t.tagName!=='BUTTON'&&t.tagName!=='A'&&t.tagName!=='DIV'){t=t.parentElement;}if(t){t.click();return true;}}if(window.history.length>1&&document.location.pathname!=='/'){window.history.back();return true;}return false;};`,
+          }}
+        />
         <link rel="manifest" href="/manifest.webmanifest" crossOrigin="use-credentials" />
         <meta name="theme-color" content="#f8f7f2" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
