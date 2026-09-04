@@ -175,12 +175,19 @@ class MainActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                // 优先让单页应用通过 JS 的 history API 后退；如果真没历史了也不退出，防止手势误触退出 APP
                 webView.evaluateJavascript(
-                    "(function() { if (window.history.length > 1 && document.location.pathname !== '/') { window.history.back(); return 'backed'; } return 'top'; })()"
+                    "(function() { " +
+                    "  const btn = document.querySelector('button[aria-label=\"返回\"], button[aria-label=\"Back\"], .back-button');" +
+                    "  if (btn) { btn.click(); return 'clicked'; }" +
+                    "  if (window.history.length > 2 && document.location.pathname !== '/') { window.history.back(); return 'backed'; }" +
+                    "  return 'top';" +
+                    "})()"
                 ) { result ->
-                    if (result != "\"backed\"" && webView.canGoBack()) {
+                    if (result == "\"top\"" && webView.canGoBack()) {
                         webView.goBack()
+                    } else if (result == "\"top\"") {
+                        // 在首页或确实无路可退时，将应用推入后台而不是退出（行为类似按 Home 键）
+                        moveTaskToBack(true)
                     }
                 }
             }
