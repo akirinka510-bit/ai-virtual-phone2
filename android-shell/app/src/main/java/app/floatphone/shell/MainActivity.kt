@@ -177,7 +177,7 @@ class MainActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 webView.evaluateJavascript(
                     "(function() { " +
-                    "  const btn = document.querySelector('button[aria-label=\"返回\"], button[aria-label=\"Back\"], .back-button');" +
+                    "  const btn = document.querySelector('button[aria-label=\"返回\"], button[aria-label=\"Back\"], .back-button, button[class*=\"back\" i], div[class*=\"back\" i]');" +
                     "  if (btn) { btn.click(); return 'clicked'; }" +
                     "  if (window.history.length > 2 && document.location.pathname !== '/') { window.history.back(); return 'backed'; }" +
                     "  return 'top';" +
