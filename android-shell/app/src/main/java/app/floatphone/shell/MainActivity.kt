@@ -175,22 +175,12 @@ class MainActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                // 优先让单页应用通过 JS 的 history API 后退；如果真没历史了也不退出，防止手势误触退出 APP
                 webView.evaluateJavascript(
-                    "(function() { " +
-                    "  const btn = document.querySelector('button[aria-label=\"返回\"], button[aria-label=\"Back\"], .back-button, button[class*=\"back\" i], div[class*=\"back\" i], a[href=\"javascript:history.back()\"], header svg, nav svg');" +
-                    "  if (btn) { " +
-                    "    let target = btn;" +
-                    "    while (target && target.tagName !== 'BUTTON' && target.tagName !== 'A' && target.tagName !== 'DIV') { target = target.parentElement; }" +
-                    "    if (target) { target.click(); return 'clicked'; }" +
-                    "  }" +
-                    "  if (window.history.length > 1 && document.location.pathname !== '/') { window.history.back(); return 'backed'; }" +
-                    "  return 'top';" +
-                    "})()"
+                    "(function() { if (window.history.length > 1 && document.location.pathname !== '/') { window.history.back(); return 'backed'; } return 'top'; })()"
                 ) { result ->
-                    if (result == "\"top\"" && webView.canGoBack()) {
+                    if (result != "\"backed\"" && webView.canGoBack()) {
                         webView.goBack()
-                    } else if (result == "\"top\"" || result == "\"\"") {
-                        moveTaskToBack(true)
                     }
                 }
             }
