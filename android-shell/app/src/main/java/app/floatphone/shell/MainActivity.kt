@@ -6,6 +6,7 @@ import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Rect
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
@@ -25,6 +26,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 
 /**
@@ -175,7 +177,12 @@ class MainActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                // 将原生返回键事件完全交给网页前端接管（需网页实现 window.onNativeBackPressed）
+                // WebView 有历史记录时直接后退；没有历史时推入后台而不退出
+                if (webView.canGoBack()) {
+                    webView.goBack()
+                    return
+                }
+                // 将原生返回键事件交给网页前端（需网页实现 window.onNativeBackPressed）
                 webView.evaluateJavascript(
                     "(function() { " +
                     "  if (typeof window.onNativeBackPressed === 'function') { " +
@@ -190,10 +197,24 @@ class MainActivity : AppCompatActivity() {
                         // 前端没处理（未接入或在首页退无可退），把应用推入后台，不退出
                         moveTaskToBack(true)
                     }
-                    // 如果 trimmed == "handled"，什么都不做，让前端自己的后退生效
                 }
             }
         })
+
+        // Android 10+ 手势导航：把 WebView 左边缘排除在系统手势区外，
+        // 防止右滑手势被系统拦截为「返回上一个 Activity / 退出 App」
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            webView.addOnLayoutChangeListener { _, _, _, right, bottom, _, _, _, _ ->
+                val edgeWidth = (24 * resources.displayMetrics.density).toInt()
+                ViewCompat.setSystemGestureExclusionRects(
+                    webView,
+                    listOf(
+                        Rect(0, 0, edgeWidth, bottom),           // 左边缘
+                        Rect(right - edgeWidth, 0, right, bottom) // 右边缘（对称处理）
+                    )
+                )
+            }
+        }
 
         // 冷启动带深链（如来电接听）直接加载目标；否则加载首页
         webView.loadUrl(consumeOpenUrl(intent) ?: SITE_URL)
