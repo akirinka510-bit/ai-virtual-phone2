@@ -52,6 +52,42 @@ export default function RootLayout({
             __html: `window.onNativeBackPressed=function(){var b=document.querySelector('button[aria-label="返回"],button[aria-label="Back"],button[aria-label="关闭"],.back-button,button[class*="back" i],div[class*="back" i],a[href="javascript:history.back()"],header svg,nav svg');if(b){var t=b;while(t&&t.tagName!=='BUTTON'&&t.tagName!=='A'&&t.tagName!=='DIV'){t=t.parentElement;}if(t){t.click();return true;}}if(window.history.length>1&&document.location.pathname!=='/'){window.history.back();return true;}return false;};`,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `// 阻止边缘滑动导致应用退出
+(function() {
+  var startX, startY;
+  var edgeThreshold = 30; // 边缘区域宽度
+  var isEdgeSwipe = false;
+  
+  function isLeftEdge(x) {
+    return x <= edgeThreshold;
+  }
+  
+  function isRightEdge(x) {
+    return x >= window.innerWidth - edgeThreshold;
+  }
+  
+  document.addEventListener('touchstart', function(e) {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isEdgeSwipe = isLeftEdge(startX) || isRightEdge(startX);
+  }, { passive: true });
+  
+  document.addEventListener('touchmove', function(e) {
+    if (!isEdgeSwipe) return;
+    // 如果是边缘滑动，阻止默认行为
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+  
+  document.addEventListener('touchend', function(e) {
+    isEdgeSwipe = false;
+  }, { passive: true });
+})();`,
+          }}
+        />
         <link rel="manifest" href="/manifest.webmanifest" crossOrigin="use-credentials" />
         <meta name="theme-color" content="#f8f7f2" />
         <link rel="apple-touch-icon" href="/icon-192.png" />

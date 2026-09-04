@@ -205,7 +205,7 @@ class MainActivity : AppCompatActivity() {
         // 防止右滑手势被系统拦截为「返回上一个 Activity / 退出 App」
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             webView.addOnLayoutChangeListener { _, _, _, right, bottom, _, _, _, _ ->
-                val edgeWidth = (24 * resources.displayMetrics.density).toInt()
+                val edgeWidth = (64 * resources.displayMetrics.density).toInt()  // 增加到64dp，更好地防止系统手势
                 ViewCompat.setSystemGestureExclusionRects(
                     webView,
                     listOf(
