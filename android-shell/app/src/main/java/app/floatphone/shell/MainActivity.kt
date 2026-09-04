@@ -175,7 +175,14 @@ class MainActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (webView.canGoBack()) webView.goBack() else moveTaskToBack(true)
+                // 优先让单页应用通过 JS 的 history API 后退；如果真没历史了也不退出，防止手势误触退出 APP
+                webView.evaluateJavascript(
+                    "(function() { if (window.history.length > 1 && document.location.pathname !== '/') { window.history.back(); return 'backed'; } return 'top'; })()"
+                ) { result ->
+                    if (result != "\"backed\"" && webView.canGoBack()) {
+                        webView.goBack()
+                    }
+                }
             }
         })
 
