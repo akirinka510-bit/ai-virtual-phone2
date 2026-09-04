@@ -175,13 +175,22 @@ class MainActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                // 优先让单页应用通过 JS 的 history API 后退；如果真没历史了也不退出，防止手势误触退出 APP
+                // 将原生返回键事件完全交给网页前端接管（需网页实现 window.onNativeBackPressed）
                 webView.evaluateJavascript(
-                    "(function() { if (window.history.length > 1 && document.location.pathname !== '/') { window.history.back(); return 'backed'; } return 'top'; })()"
+                    "(function() { " +
+                    "  if (typeof window.onNativeBackPressed === 'function') { " +
+                    "    var result = window.onNativeBackPressed(); " +
+                    "    return result === true ? 'handled' : 'unhandled'; " +
+                    "  } " +
+                    "  return 'no_handler'; " +
+                    "})()"
                 ) { result ->
-                    if (result != "\"backed\"" && webView.canGoBack()) {
-                        webView.goBack()
+                    val trimmed = result?.trim('"')
+                    if (trimmed != "handled") {
+                        // 前端没处理（未接入或在首页退无可退），把应用推入后台，不退出
+                        moveTaskToBack(true)
                     }
+                    // 如果 trimmed == "handled"，什么都不做，让前端自己的后退生效
                 }
             }
         })
