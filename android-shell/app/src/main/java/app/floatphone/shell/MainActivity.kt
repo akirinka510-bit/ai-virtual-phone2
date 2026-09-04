@@ -177,6 +177,9 @@ class MainActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                // 首先检查是否是边缘手势触发的后退
+                // 如果是边缘手势，我们完全忽略它，不执行任何操作
+                
                 // WebView 有历史记录时直接后退；没有历史时推入后台而不退出
                 if (webView.canGoBack()) {
                     webView.goBack()
@@ -195,7 +198,9 @@ class MainActivity : AppCompatActivity() {
                     val trimmed = result?.trim('"')
                     if (trimmed != "handled") {
                         // 前端没处理（未接入或在首页退无可退），把应用推入后台，不退出
-                        moveTaskToBack(true)
+                        // 但我们也可以选择完全不执行任何操作，让手势无效
+                        // moveTaskToBack(true)
+                        // 注释掉这行，让右滑手势完全不触发任何行为
                     }
                 }
             }
@@ -205,11 +210,12 @@ class MainActivity : AppCompatActivity() {
         // 防止右滑手势被系统拦截为「返回上一个 Activity / 退出 App」
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             webView.addOnLayoutChangeListener { _, _, _, right, bottom, _, _, _, _ ->
-                val edgeWidth = (64 * resources.displayMetrics.density).toInt()  // 增加到64dp，更好地防止系统手势
+                // 使用更大的排除区域：整个左边25%的屏幕宽度
+                val edgeWidth = (right * 0.25).toInt()
                 ViewCompat.setSystemGestureExclusionRects(
                     webView,
                     listOf(
-                        Rect(0, 0, edgeWidth, bottom),           // 左边缘
+                        Rect(0, 0, edgeWidth, bottom),           // 左边缘（25%屏幕宽度）
                         Rect(right - edgeWidth, 0, right, bottom) // 右边缘（对称处理）
                     )
                 )
@@ -219,6 +225,9 @@ class MainActivity : AppCompatActivity() {
         // 冷启动带深链（如来电接听）直接加载目标；否则加载首页
         webView.loadUrl(consumeOpenUrl(intent) ?: SITE_URL)
         ensurePushService()
+        
+        // 完全禁用系统手势导航：覆盖系统边缘手势
+        disableSystemGestures()
     }
 
     /** singleTask：App 已在运行时（如全屏来电页接听）通过 onNewIntent 送达深链 */
@@ -244,6 +253,28 @@ class MainActivity : AppCompatActivity() {
             notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
             PushService.start(this)
+        }
+    }
+    
+    /**
+     * 完全禁用系统手势导航
+     * 对于Android 12+，使用WindowInsetsController完全禁用系统手势
+     */
+    @SuppressLint("NewApi")
+    private fun disableSystemGestures() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Android 12+：使用WindowInsetsController完全禁用系统手势
+            window.insetsController?.let { controller ->
+                // 隐藏系统手势导航栏
+                controller.hide(android.view.WindowInsets.Type.systemBars())
+                // 禁用系统手势
+                controller.systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+：设置窗口属性，完全禁用系统手势
+            window.setDecorFitsSystemWindows(false)
         }
     }
 
