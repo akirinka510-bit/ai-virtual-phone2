@@ -177,16 +177,19 @@ class MainActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 webView.evaluateJavascript(
                     "(function() { " +
-                    "  const btn = document.querySelector('button[aria-label=\"返回\"], button[aria-label=\"Back\"], .back-button, button[class*=\"back\" i], div[class*=\"back\" i]');" +
-                    "  if (btn) { btn.click(); return 'clicked'; }" +
-                    "  if (window.history.length > 2 && document.location.pathname !== '/') { window.history.back(); return 'backed'; }" +
+                    "  const btn = document.querySelector('button[aria-label=\"返回\"], button[aria-label=\"Back\"], .back-button, button[class*=\"back\" i], div[class*=\"back\" i], a[href=\"javascript:history.back()\"], header svg, nav svg');" +
+                    "  if (btn) { " +
+                    "    let target = btn;" +
+                    "    while (target && target.tagName !== 'BUTTON' && target.tagName !== 'A' && target.tagName !== 'DIV') { target = target.parentElement; }" +
+                    "    if (target) { target.click(); return 'clicked'; }" +
+                    "  }" +
+                    "  if (window.history.length > 1 && document.location.pathname !== '/') { window.history.back(); return 'backed'; }" +
                     "  return 'top';" +
                     "})()"
                 ) { result ->
                     if (result == "\"top\"" && webView.canGoBack()) {
                         webView.goBack()
-                    } else if (result == "\"top\"") {
-                        // 在首页或确实无路可退时，将应用推入后台而不是退出（行为类似按 Home 键）
+                    } else if (result == "\"top\"" || result == "\"\"") {
                         moveTaskToBack(true)
                     }
                 }
