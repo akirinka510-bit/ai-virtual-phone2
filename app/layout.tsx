@@ -54,10 +54,10 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `// 阻止边缘滑动导致应用退出
+            __html: `// 阻止左右边缘滑动导致应用退出
 (function() {
   var startX, startY;
-  var edgeThreshold = 30; // 边缘区域宽度
+  var edgeThreshold = 50; // 增加边缘区域宽度到50px
   var isEdgeSwipe = false;
   
   function isLeftEdge(x) {
@@ -68,15 +68,24 @@ export default function RootLayout({
     return x >= window.innerWidth - edgeThreshold;
   }
   
+  function isEdgeGesture(startX, endX) {
+    // 从边缘开始且水平移动距离大于垂直移动距离
+    return (isLeftEdge(startX) || isRightEdge(startX));
+  }
+  
   document.addEventListener('touchstart', function(e) {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     isEdgeSwipe = isLeftEdge(startX) || isRightEdge(startX);
-  }, { passive: true });
+    // 如果是边缘触摸，立即阻止可能的默认行为
+    if (isEdgeSwipe && e.cancelable) {
+      e.preventDefault();
+    }
+  }, { passive: false });
   
   document.addEventListener('touchmove', function(e) {
     if (!isEdgeSwipe) return;
-    // 如果是边缘滑动，阻止默认行为
+    // 如果是边缘滑动，完全阻止默认行为
     if (e.cancelable) {
       e.preventDefault();
     }
@@ -85,6 +94,13 @@ export default function RootLayout({
   document.addEventListener('touchend', function(e) {
     isEdgeSwipe = false;
   }, { passive: true });
+  
+  // 额外：阻止整个文档的contextmenu（长按菜单），避免意外触发
+  document.addEventListener('contextmenu', function(e) {
+    if (isLeftEdge(e.clientX) || isRightEdge(e.clientX)) {
+      e.preventDefault();
+    }
+  }, { passive: false });
 })();`,
           }}
         />

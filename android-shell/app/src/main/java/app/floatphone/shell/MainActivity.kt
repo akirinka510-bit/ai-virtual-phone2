@@ -206,21 +206,8 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        // Android 10+ 手势导航：把 WebView 左边缘排除在系统手势区外，
-        // 防止右滑手势被系统拦截为「返回上一个 Activity / 退出 App」
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            webView.addOnLayoutChangeListener { _, _, _, right, bottom, _, _, _, _ ->
-                // 使用更大的排除区域：整个左边25%的屏幕宽度
-                val edgeWidth = (right * 0.25).toInt()
-                ViewCompat.setSystemGestureExclusionRects(
-                    webView,
-                    listOf(
-                        Rect(0, 0, edgeWidth, bottom),           // 左边缘（25%屏幕宽度）
-                        Rect(right - edgeWidth, 0, right, bottom) // 右边缘（对称处理）
-                    )
-                )
-            }
-        }
+        // 手势排除区域现在在 disableSystemGestures() 方法中统一处理
+        // 该方法会设置左右边缘各30%宽度和底部15%高度的排除区域
 
         // 冷启动带深链（如来电接听）直接加载目标；否则加载首页
         webView.loadUrl(consumeOpenUrl(intent) ?: SITE_URL)
@@ -265,16 +252,39 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // Android 12+：使用WindowInsetsController完全禁用系统手势
             window.insetsController?.let { controller ->
-                // 隐藏系统手势导航栏
+                // 隐藏所有系统栏（状态栏、导航栏）
                 controller.hide(android.view.WindowInsets.Type.systemBars())
-                // 禁用系统手势
+                // 设置手势行为：仅通过滑动临时显示
                 controller.systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                // 明确禁用系统手势
+                controller.hide(android.view.WindowInsets.Type.systemGestures())
             }
         }
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // Android 11+：设置窗口属性，完全禁用系统手势
             window.setDecorFitsSystemWindows(false)
+            // 明确设置不处理系统手势
+            window.attributes.layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+        
+        // 对于所有版本：设置窗口标志，防止手势触发
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        
+        // 添加底部边缘排除区域（防止从底部向上滑触发手势）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            webView.addOnLayoutChangeListener { _, _, _, right, bottom, _, _, _, _ ->
+                val edgeWidth = (right * 0.30).toInt()
+                val edgeHeight = (bottom * 0.15).toInt()  // 底部15%高度
+                ViewCompat.setSystemGestureExclusionRects(
+                    webView,
+                    listOf(
+                        Rect(0, 0, edgeWidth, bottom),           // 左边缘（30%屏幕宽度）
+                        Rect(right - edgeWidth, 0, right, bottom), // 右边缘（30%屏幕宽度）
+                        Rect(0, bottom - edgeHeight, right, bottom) // 底部边缘（15%屏幕高度）
+                    )
+                )
+            }
         }
     }
 
